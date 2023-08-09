@@ -34,7 +34,7 @@ int ObjReader::ParseFile() {
 
     in.close();
   } else {
-    std::cerr << "Unable to open file cube.obj" << std::endl;
+    std::cerr << "Unable to open file: " << file_path_<<  std::endl;
     return 1;
   }
   return 0;
