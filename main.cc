@@ -8,7 +8,7 @@
 class ObjReader {
  public:
   ObjReader() = default;
-  ObjReader(std::string file_path) : file_path_(file_path) {}
+  ObjReader(const std::string &file_path) : file_path_(file_path) {}
   void PrintFacets();
   void PrintVertex();
   int ParseFile();
@@ -17,8 +17,8 @@ class ObjReader {
   std::vector<double> vertex_{};
   std::vector<unsigned int> facets_{};
   std::string file_path_;
-  bool ProcessVertex(std::string line);
-  bool ProcessFacets(std::string line);
+  bool ProcessVertex(const std::string &line);
+  bool ProcessFacets(const std::string &line);
 };
 
 int ObjReader::ParseFile() {
@@ -34,7 +34,7 @@ int ObjReader::ParseFile() {
 
     in.close();
   } else {
-    std::cerr << "Unable to open file: " << file_path_<<  std::endl;
+    std::cerr << "Unable to open file: " << file_path_ << std::endl;
     return 1;
   }
   return 0;
@@ -65,32 +65,44 @@ void ObjReader::PrintFacets() {
   printf("=============================================\n");
 }
 
-bool ObjReader::ProcessFacets(std::string line) {
+bool ObjReader::ProcessFacets(const std::string &line) {
   if (line.compare(0, 2, "f ") == 0) {
     std::string shifted_line = line.substr(2);
     std::istringstream iss(shifted_line);
     std::string token;
-    bool first_iteration = true;
+    int added{};
     int first_id{};
     int prev_id{};
 
+    int a = 0;
+
+    getline(iss, token, ' ');
+    if (token[0] != '/') {
+      a -= 1;
+      if (a < 0) {
+        a += vertex_.size() / 3 + 1;
+      }
+      first_id = a;
+      prev_id = a;
+    }
+
     while (getline(iss, token, ' ')) {
+      if (token[0] == '/') continue;
       int a = std::stoi(token);
       a -= 1;
 
       if (a < 0) {
-        a += vertex_.size() + 1;
+        a += vertex_.size() / 3UL + 1;
       }
 
-      if (first_iteration) {
-        first_id = a;
-        first_iteration = false;
-      } else {
-        facets_.push_back(prev_id);
-        facets_.push_back(a);
-      }
-
+      facets_.push_back(prev_id);
+      facets_.push_back(a);
+      added += 2;
       prev_id = a;
+    }
+
+    if (added <= 2) {
+      throw std::runtime_error("To low vertexes");
     }
 
     facets_.push_back(prev_id);
@@ -100,8 +112,8 @@ bool ObjReader::ProcessFacets(std::string line) {
   return false;
 }
 
-bool ObjReader::ProcessVertex(std::string line) {
-  if (line[0] == 'v' && line[1] == ' ') {
+bool ObjReader::ProcessVertex(const std::string &line) {
+  if (line.compare(0, 2, "v ") == 0) {
     std::string shifted_line = line.substr(2);
     std::istringstream iss(shifted_line);
     while (getline(iss, shifted_line, ' ')) {
